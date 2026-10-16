@@ -8,6 +8,8 @@ import { AffiliateClickStreamHeatmap } from "../components/affiliate/ClickStream
 import { TelegramCampaignBrowser } from "../components/affiliate/TelegramCampaignBrowser";
 import { CustomLinksManager } from "../components/affiliate/CustomLinksManager";
 import { CampaignApplication } from "../components/affiliate/CampaignApplication";
+import { AffiliateLeaderboard } from "../components/affiliate/AffiliateLeaderboard";
+import { MilestoneBadges } from "../components/affiliate/MilestoneBadges";
 import {
   Users,
   TrendingUp,
@@ -18,6 +20,8 @@ import {
   Send,
   Sliders,
   Link2,
+  Trophy,
+  Award,
 } from "lucide-react";
 import { NotificationProvider } from "../context/NotificationContext";
 import { usePreference } from "../hooks/usePreference";
@@ -29,6 +33,7 @@ import { Button } from "../components/ui/button";
 
 interface AffiliateProps {
   onBack: () => void;
+  initialTab?: string;
 }
 
 const AFFILIATE_TABS = [
@@ -36,6 +41,8 @@ const AFFILIATE_TABS = [
   "heatmap",
   "telegram-browser",
   "custom-links",
+  "leaderboard",
+  "milestones",
   "join-campaign",
   "my-sales",
   "claim-payouts",
@@ -45,10 +52,14 @@ const AFFILIATE_TABS = [
 ] as const;
 type AffiliateTab = (typeof AFFILIATE_TABS)[number];
 
-const AffiliateContent: React.FC<AffiliateProps> = ({ onBack }) => {
+const AffiliateContent: React.FC<AffiliateProps> = ({ onBack, initialTab = "overview" }) => {
   const [activeTab, setActiveTab] = usePreference<AffiliateTab>(
     "stormsale.affiliate.tab",
-    isTelegramMiniApp() ? "telegram-browser" : "overview",
+    AFFILIATE_TABS.includes(initialTab as AffiliateTab)
+      ? (initialTab as AffiliateTab)
+      : isTelegramMiniApp()
+        ? "telegram-browser"
+        : "overview",
     (v) => AFFILIATE_TABS.includes(v as AffiliateTab),
   );
 
@@ -57,6 +68,8 @@ const AffiliateContent: React.FC<AffiliateProps> = ({ onBack }) => {
     { id: "heatmap", label: "Click Heatmap", icon: Globe2 },
     { id: "telegram-browser", label: "Telegram Campaigns", icon: Send },
     { id: "custom-links", label: "Custom Short Links", icon: Link2 },
+    { id: "leaderboard", label: "Leaderboards", icon: Trophy },
+    { id: "milestones", label: "Milestone Badges", icon: Award },
     { id: "join-campaign", label: "Join Campaign", icon: Users },
     { id: "apply-links", label: "Apply & Tracking Links", icon: Link2 },
     { id: "my-sales", label: "My Sales & Commissions", icon: DollarSign },
@@ -73,6 +86,10 @@ const AffiliateContent: React.FC<AffiliateProps> = ({ onBack }) => {
         return <TelegramCampaignBrowser />;
       case "custom-links":
         return <CustomLinksManager />;
+      case "leaderboard":
+        return <AffiliateLeaderboard onSelectMilestones={() => setActiveTab("milestones")} />;
+      case "milestones":
+        return <MilestoneBadges />;
       case "join-campaign":
         return <JoinCampaignButton />;
       case "apply-links":
@@ -89,9 +106,21 @@ const AffiliateContent: React.FC<AffiliateProps> = ({ onBack }) => {
           </div>
         );
       case "overview":
-        return <AffiliateOverview onNavigate={setActiveTab} />;
+        return (
+          <AffiliateOverview
+            onNavigate={setActiveTab}
+            onNavigateToLeaderboard={() => setActiveTab("leaderboard")}
+            onNavigateToMilestones={() => setActiveTab("milestones")}
+          />
+        );
       default:
-        return <AffiliateOverview onNavigate={setActiveTab} />;
+        return (
+          <AffiliateOverview
+            onNavigate={setActiveTab}
+            onNavigateToLeaderboard={() => setActiveTab("leaderboard")}
+            onNavigateToMilestones={() => setActiveTab("milestones")}
+          />
+        );
     }
   };
 
