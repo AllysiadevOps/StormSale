@@ -9,6 +9,7 @@ import {
 } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { CheckCircle2, AlertTriangle, Clock, FileText, Download, Filter } from "lucide-react";
+import { getExportAuditHistory } from "../../lib/auditor/exportService";
 
 type AuditStatus = "Verified" | "Denied" | "Pending";
 
@@ -105,18 +106,30 @@ const OVESCAN = 4;
 const VIEWPORT_HEIGHT = 480;
 
 export const AuditHistory = () => {
-  const verified = auditRecords.filter((r) => r.status === "Verified").length;
-  const denied = auditRecords.filter((r) => r.status === "Denied").length;
-  const pending = auditRecords.filter((r) => r.status === "Pending").length;
+  const dynamicRecords: AuditRecord[] = [
+    ...getExportAuditHistory().map((evt) => ({
+      saleId: `SOC2-${evt.id.slice(0, 6)}`,
+      campaign: `SOC 2 Evidence Pack (${evt.filename})`,
+      campaignAddress: evt.exporterAddress,
+      status: "Verified" as AuditStatus,
+      timestamp: evt.timestamp.slice(0, 16).replace("T", " "),
+      notes: `Root: ${evt.rootDigest.slice(0, 12)}... (${evt.totalFiles} files bundled)`,
+    })),
+    ...auditRecords,
+  ];
+
+  const verified = dynamicRecords.filter((r) => r.status === "Verified").length;
+  const denied = dynamicRecords.filter((r) => r.status === "Denied").length;
+  const pending = dynamicRecords.filter((r) => r.status === "Pending").length;
 
   const [walletFilter, setWalletFilter] = useState("");
   const [scrollTop, setScrollTop] = useState(0);
-  const scrollRef = useRef<HTMDDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const filteredRecords = useMemo(() => {
     const query = walletFilter.trim().toLowerCase();
-    if (!query) return auditRecords;
-    return auditRecords.filter((r) => r.walletAddress.toLowerCase().includes(query));
+    if (!query) return dynamicRecords;
+    return dynamicRecords.filter((r) => r.walletAddress.toLowerCase().includes(query));
   }, [walletFilter]);
 
   const totalHeight = filteredRecords.length * ROW_HEIGHT;
@@ -222,7 +235,7 @@ export const AuditHistory = () => {
                   >
                     <div className="flex items-center gap-4">
                       <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${/
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                           record.status === "Verified"
                             ? "bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20"
                             : record.status === "Denied"
