@@ -106,13 +106,6 @@ const AffiliateContent: React.FC<AffiliateProps> = ({ onBack, initialTab = "over
           </div>
         );
       case "overview":
-        return (
-          <AffiliateOverview
-            onNavigate={setActiveTab}
-            onNavigateToLeaderboard={() => setActiveTab("leaderboard")}
-            onNavigateToMilestones={() => setActiveTab("milestones")}
-          />
-        );
       default:
         return (
           <AffiliateOverview
