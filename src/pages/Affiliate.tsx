@@ -24,6 +24,7 @@ import { usePreference } from "../hooks/usePreference";
 import { motion, AnimatePresence } from "framer-motion";
 import { isTelegramMiniApp } from "../lib/telegram";
 import { AffiliateSettings } from "../components/affiliate/AffiliateSettings";
+import { TelegramAlertsCard } from "../components/affiliate/TelegramAlertsCard";
 import { Button } from "../components/ui/button";
 
 interface AffiliateProps {
@@ -81,7 +82,12 @@ const AffiliateContent: React.FC<AffiliateProps> = ({ onBack }) => {
       case "claim-payouts":
         return <ClaimPayouts />;
       case "settings":
-        return <AffiliateSettings />;
+        return (
+          <div className="space-y-6">
+            <AffiliateSettings />
+            <TelegramAlertsCard />
+          </div>
+        );
       case "overview":
         return <AffiliateOverview onNavigate={setActiveTab} />;
       default:
