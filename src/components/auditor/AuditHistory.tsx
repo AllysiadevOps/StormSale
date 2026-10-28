@@ -14,11 +14,9 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
-  FileText,
   Download,
   Filter,
   Eye,
-  GitFork,
 } from "lucide-react";
 import { getExportAuditHistory } from "../../lib/auditor/exportService";
 
@@ -118,7 +116,7 @@ const statusConfig: Record<
 };
 
 const ROW_HEIGHT = 96;
-const OVESCAN = 4;
+const OVERSCAN = 4;
 const VIEWPORT_HEIGHT = 480;
 
 export const AuditHistory: React.FC<AuditHistoryProps> = ({
@@ -128,17 +126,20 @@ export const AuditHistory: React.FC<AuditHistoryProps> = ({
   const { org } = useAuditorTenancy();
   // Tenant boundary: the trail only ever shows this organization's sales.
   const auditRecords = recordsScopedToOrg(org.id, ALL_AUDIT_RECORDS);
-  const dynamicRecords: AuditRecord[] = [
-    ...getExportAuditHistory().map((evt) => ({
-      saleId: `SOC2-${evt.id.slice(0, 6)}`,
-      campaign: `SOC 2 Evidence Pack (${evt.filename})`,
-      campaignAddress: evt.exporterAddress,
-      status: "Verified" as AuditStatus,
-      timestamp: evt.timestamp.slice(0, 16).replace("T", " "),
-      notes: `Root: ${evt.rootDigest.slice(0, 12)}... (${evt.totalFiles} files bundled)`,
-    })),
-    ...auditRecords,
-  ];
+  const exportRecords: AuditRecord[] = getExportAuditHistory().map((evt) => ({
+    saleId: `SOC2-${evt.id.slice(0, 6)}`,
+    campaign: `SOC 2 Evidence Pack (${evt.filename})`,
+    campaignAddress: evt.exporterAddress,
+    walletAddress: evt.exporterAddress,
+    status: "Verified" as AuditStatus,
+    timestamp: evt.timestamp.slice(0, 16).replace("T", " "),
+    notes: `Root: ${evt.rootDigest.slice(0, 12)}... (${evt.totalFiles} files bundled)`,
+  }));
+  const dynamicRecords: AuditRecord[] = useMemo(
+    () => [...exportRecords, ...auditRecords],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [org.id]
+  );
 
   const verified = dynamicRecords.filter((r) => r.status === "Verified").length;
   const denied = dynamicRecords.filter((r) => r.status === "Denied").length;
@@ -152,13 +153,13 @@ export const AuditHistory: React.FC<AuditHistoryProps> = ({
     const query = walletFilter.trim().toLowerCase();
     if (!query) return dynamicRecords;
     return dynamicRecords.filter((r) => r.walletAddress.toLowerCase().includes(query));
-  }, [walletFilter]);
+  }, [dynamicRecords, walletFilter]);
 
   const totalHeight = filteredRecords.length * ROW_HEIGHT;
-  const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVESCAN);
+  const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
   const endIndex = Math.min(
     filteredRecords.length,
-    Math.ceil((scrollTop + VIEWPORT_HEIGHT) / ROW_HEIGHT) + OVESCAN
+    Math.ceil((scrollTop + VIEWPORT_HEIGHT) / ROW_HEIGHT) + OVERSCAN
   );
   const visibleRecords = filteredRecords.slice(startIndex, endIndex);
 
@@ -264,7 +265,7 @@ export const AuditHistory: React.FC<AuditHistoryProps> = ({
                 const absoluteIndex = startIndex + i;
                 return (
                   <div
-                    key={absoluteIndex}
+                    key={`${record.saleId}-${absoluteIndex}`}
                     className="absolute left-0 right-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-8 py-5 border-b border-slate-100 dark:border-zinc-800/50 hover:bg-slate-50/50 dark:hover:bg-zinc-900/30 transition-colors"
                     style={{ top: absoluteIndex * ROW_HEIGHT, height: ROW_HEIGHT }}
                   >
@@ -298,46 +299,4 @@ export const AuditHistory: React.FC<AuditHistoryProps> = ({
                         <div className="text-xs font-mono text-zinc-400 dark:text-zinc-500 mt-0.5">
                           Wallet {record.walletAddress}
                         </div>
-                        <div className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mt-1 flex items-center gap-1">
-                          <FileText className="w-3 h-3" />
-                          {record.notes}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 sm:flex-col sm:items-end">
-                      <span
-                        className={`inline-flex text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded-full ${cfg.badge}`}
-                      >
-                        {cfg.label}
-                      </span>
-                      <div className="text-xs font-medium text-zinc-400 dark:text-zinc-500">
-                        {record.timestamp}
-                      </div>
-                      {record.status === "Verified" && (onViewMerkleProof || onTabChange) && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            if (onViewMerkleProof) {
-                              onViewMerkleProof(record.saleId, record.campaign);
-                            } else if (onTabChange) {
-                              onTabChange("merkle");
-                            }
-                          }}
-                          className="h-6 px-2 text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 flex items-center gap-1"
-                        >
-                          <GitFork className="w-3 h-3" />
-                          Merkle Proof
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+                        <div className="text-xs font-medium text-zinc-400 dark:text-zinc-500 mt-0.5">
